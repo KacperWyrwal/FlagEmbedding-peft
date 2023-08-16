@@ -25,6 +25,7 @@ class ModelArguments:
 
     sentence_pooling_method: str = field(default='cls', metadata={"help": "the pooling method, should be cls or mean"})
     normlized: bool = field(default=True)
+    peft: bool = field(default=True, metadata={"help": "Load model from a PEFT checkpoint?"})
 
 
 @dataclass
@@ -59,3 +60,11 @@ class RetrieverTrainingArguments(TrainingArguments):
     negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
     temperature: Optional[float] = field(default=0.01)
     fix_position_embedding: bool = field(default=False, metadata={"help": "Freeze the parameters of position embeddings"})
+    lora: bool = field(default=True, metadata={"help": "Use LoRA?"})
+
+
+@dataclass 
+class LoRAArguments(TrainingArguments): 
+    alpha: int = field(default=8, metadata={"help": "LoRA alpha parameter."})
+    r: int = field(default=8, metadata={"help": "LoRA rank parameter."})
+    dropout: float = field(default=0.0, metadata={"help": "LoRA dropout parameter."})

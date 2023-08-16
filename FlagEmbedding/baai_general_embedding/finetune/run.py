@@ -7,8 +7,9 @@ from transformers import (
     HfArgumentParser,
     set_seed,
 )
+from peft import LoraConfig, get_peft_model 
 
-from .arguments import ModelArguments, DataArguments, \
+from .arguments import ModelArguments, DataArguments, LoRAArguments, \
     RetrieverTrainingArguments as TrainingArguments
 from .data import TrainDatasetForEmbedding, EmbedCollator
 from .modeling import BiEncoderModel
@@ -18,11 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
-    model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments, LoRAArguments))
+    model_args, data_args, training_args, lora_args = parser.parse_args_into_dataclasses()
     model_args: ModelArguments
     data_args: DataArguments
     training_args: TrainingArguments
+    lora_args: LoRAArguments
 
     if (
             os.path.exists(training_args.output_dir)
@@ -72,7 +74,29 @@ def main():
                            normlized=model_args.normlized,
                            sentence_pooling_method=model_args.sentence_pooling_method,
                            negatives_cross_device=training_args.negatives_cross_device,
-                           temperature=training_args.temperature)
+                           temperature=training_args.temperature, 
+                           peft=model_args.peft)
+    
+    # Maybe train with LoRA
+    if model_args.peft is True:
+        lora_config = LoraConfig(
+            r=lora_args.r,
+            lora_alpha=lora_args.alpha,
+            target_modules=["query", "key", "value", "dense"], # module names specific to bert (small, base, and large)
+            lora_dropout=lora_args.dropout,
+            bias="none",
+            task_type="FEATURE_EXTRACTION",
+        )
+
+        logger.info("LoRA config: %s", lora_config)
+
+        model.model = get_peft_model(model.model, lora_config)
+        model.model.print_trainable_parameters()
+        
+    # Add special tokens to the tokenizer and reshape model accordingly 
+    # TODO Have a notebook which sets up a models and tokenizers from FlagEmbedding
+    tokenizer.add_special_tokens({"additional_special_tokens": ["[ARTIFACT_ID]", "[GROUP_ID]", "[CVE_DESCRIPTION]", "[ARTIFACT_DESCRIPTION]"]})
+    model.model.resize_token_embeddings(len(tokenizer))
 
     if training_args.fix_position_embedding:
         for k, v in model.named_parameters():

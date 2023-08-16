@@ -7,6 +7,7 @@ import torch.distributed as dist
 from torch import nn, Tensor
 from transformers import AutoModel
 from transformers.file_utils import ModelOutput
+from peft import AutoPeftModelForFeatureExtraction
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +29,13 @@ class BiEncoderModel(nn.Module):
                  sentence_pooling_method: str = 'cls',
                  negatives_cross_device: bool = False,
                  temperature: float = 1.0,
+                 peft: bool = False, 
                  ):
         super().__init__()
-        self.model = AutoModel.from_pretrained(model_name)
+        if peft is True:
+            self.model = AutoPeftModelForFeatureExtraction.from_pretrained(model_name)
+        else:
+            self.model = AutoModel.from_pretrained(model_name)
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean')
 
         self.normlized = normlized
