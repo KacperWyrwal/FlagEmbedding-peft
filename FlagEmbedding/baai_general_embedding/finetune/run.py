@@ -87,16 +87,10 @@ def main():
             bias="none",
             task_type="FEATURE_EXTRACTION",
         )
-
         logger.info("LoRA config: %s", lora_config)
 
         model.model = get_peft_model(model.model, lora_config)
         model.model.print_trainable_parameters()
-        
-    # Add special tokens to the tokenizer and reshape model accordingly 
-    # TODO Have a notebook which sets up a models and tokenizers from FlagEmbedding
-    tokenizer.add_special_tokens({"additional_special_tokens": ["[ARTIFACT_ID]", "[GROUP_ID]", "[CVE_DESCRIPTION]", "[ARTIFACT_DESCRIPTION]"]})
-    model.model.resize_token_embeddings(len(tokenizer))
 
     if training_args.fix_position_embedding:
         for k, v in model.named_parameters():
