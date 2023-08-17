@@ -78,7 +78,7 @@ def main():
                            peft=model_args.peft)
     
     # Maybe train with LoRA
-    if model_args.peft is True:
+    if training_args.lora is True:
         lora_config = LoraConfig(
             r=lora_args.r,
             lora_alpha=lora_args.alpha,
